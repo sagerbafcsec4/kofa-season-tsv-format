@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b57d0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MiA1MiI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNDI4NWY0Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMGI1N2QwIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3QgeD0iMS41IiB5PSIxLjUiIHdpZHRoPSI0OSIgaGVpZ2h0PSI0OSIgcng9IjE0IiBmaWxsPSJ1cmwoI2cpIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjIuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIxMyIgeT0iMTIiIHdpZHRoPSIyNiIgaGVpZ2h0PSIyOCIgcng9IjQiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsLjE0KSIvPjxsaW5lIHgxPSIxMyIgeTE9IjIxIiB4Mj0iMzkiIHkyPSIyMSIvPjxsaW5lIHgxPSIyMiIgeTE9IjIxIiB4Mj0iMjIiIHkyPSI0MCIvPjwvZz48cGF0aCBkPSJNMjguNSAzMC41bDMgMyA2LjUtNi44IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=">
+<title>シーズン成績 TSVプロンプト作成</title>
+<style>
+  :root{
+    --bg:#f0f4f9; --card:#ffffff; --ink:#1f1f1f; --sub:#444746;
+    --line:#dbe2ea; --line-soft:#e8edf3;
+    --accent:#0b57d0; --accent-h:#0947ad; --accent-2:#1a73e8;
+    --grad:linear-gradient(135deg,#4285f4,#0b57d0);
+    --green:#0b8043; --green-h:#0a6d39;
+    --chip-bg:#e8f0fe; --chip-ink:#0b57d0; --chip-line:#c9defb;
+    --code-bg:#1f2430; --code-ink:#e6e9ef;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Google Sans","Roboto","Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    line-height:1.65; font-weight:500; -webkit-font-smoothing:antialiased;
+  }
+  .container{max-width:960px; margin:0 auto; padding:26px 20px 48px;}
+
+  /* header */
+  .topbar{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:14px;}
+  .logo{width:52px; height:52px; flex:0 0 auto; filter:drop-shadow(0 4px 12px rgba(11,87,208,.28));}
+  .logo svg{display:block; width:100%; height:100%;}
+  .brand h1{margin:0; font-size:21px; font-weight:700; letter-spacing:.01em;}
+  .brand p{margin:3px 0 0; font-size:13.5px; color:var(--sub);}
+  .actions{display:flex; gap:10px; flex-wrap:wrap;}
+
+  button{cursor:pointer; font-family:inherit; font-weight:600;}
+  .btn{border:none; border-radius:999px; padding:10px 18px; font-size:13.5px; color:#fff; background:var(--accent);}
+  .btn:hover{background:var(--accent-h);}
+  .btn.green{background:var(--green);} .btn.green:hover{background:var(--green-h);}
+  .btn.ghost{background:#fff; color:var(--ink); border:1px solid var(--line);}
+  .btn.ghost:hover{background:#f2f5f9;}
+  .btn.sm{padding:8px 14px; font-size:13px;}
+
+  /* view tabs */
+  .vtabs{display:flex; gap:9px; margin:22px 0 18px; flex-wrap:wrap;}
+  .vtab{border:1px solid var(--line); background:#fff; color:var(--sub);
+    border-radius:999px; padding:9px 20px; font-size:14px; font-weight:600;}
+  .vtab:hover{background:#f2f5f9;}
+  .vtab.active{background:var(--grad); color:#fff; border-color:transparent;
+    box-shadow:0 3px 9px rgba(11,87,208,.25);}
+
+  /* cards */
+  .card{background:var(--card); border:1px solid var(--line-soft); border-radius:18px;
+    padding:22px 24px; margin-bottom:18px; box-shadow:0 1px 2px rgba(20,40,80,.04);}
+  .card-head{display:flex; align-items:center; gap:12px; margin-bottom:16px;}
+  .badge{width:30px; height:30px; border-radius:9px; background:var(--grad); color:#fff;
+    display:grid; place-items:center; font-size:15px; font-weight:700; flex:0 0 auto;}
+  .card-head h2{margin:0; font-size:16.5px; font-weight:700;}
+  .card-head .sub{font-size:12.5px; color:var(--sub); font-weight:500; margin-left:2px;}
+
+  /* form */
+  label{display:block; font-size:13px; font-weight:600; margin:14px 0 6px; color:var(--ink);}
+  label:first-of-type{margin-top:0;}
+  label .hint{font-weight:500; color:var(--sub); font-size:12.5px; margin-left:6px;}
+  input[type=text], select, textarea{
+    width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:11px;
+    font-size:14px; font-family:inherit; font-weight:500; background:#fbfcfe; color:var(--ink);}
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--accent-2);
+    background:#fff; box-shadow:0 0 0 3px rgba(26,115,232,.15);}
+  textarea{resize:vertical; min-height:130px;
+    font-family:"SFMono-Regular",Consolas,"Courier New",monospace; font-size:13px; line-height:1.5;}
+  .row-3{display:grid; grid-template-columns:1fr 1fr auto; gap:12px; align-items:end;}
+  @media(max-width:560px){ .row-3{grid-template-columns:1fr 1fr;} .row-3 .btn{grid-column:1 / -1;} }
+  .switch{display:flex; align-items:center; gap:10px; margin-top:16px;
+    padding:12px 14px; background:#e8f0fe; border-radius:12px; font-size:13.5px; font-weight:600;}
+  .switch input{width:18px; height:18px; accent-color:var(--accent);}
+  .note{font-size:13px; color:var(--sub); font-weight:500; margin:10px 0 0;}
+
+  /* steps */
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  @media(max-width:680px){ .steps{grid-template-columns:1fr;} }
+  .step{background:#f7faff; border:1px solid var(--line-soft); border-radius:14px; padding:16px;}
+  .step .n{width:28px; height:28px; border-radius:50%; background:var(--grad); color:#fff;
+    display:grid; place-items:center; font-weight:700; font-size:14px; margin-bottom:10px;}
+  .step h4{margin:0 0 6px; font-size:15px; font-weight:700;}
+  .step p{margin:0; font-size:13.5px; color:var(--sub); font-weight:500;}
+  .open-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:18px;}
+
+  /* meta chips */
+  .meta{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
+  .chip{background:var(--chip-bg); color:var(--chip-ink); border:1px solid var(--chip-line);
+    border-radius:999px; padding:5px 13px; font-size:12.5px; font-weight:600;}
+
+  /* output */
+  .out-head{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;}
+  .out-head h3{margin:0; font-size:14.5px; font-weight:700;}
+  .out-head .r{display:flex; align-items:center; gap:12px;}
+  pre{background:var(--code-bg); color:var(--code-ink); border-radius:14px; padding:16px 18px;
+    overflow:auto; font-size:12.5px; line-height:1.6;
+    font-family:"SFMono-Regular",Consolas,"Courier New",monospace;
+    white-space:pre-wrap; word-break:break-word; max-height:440px; margin:0;}
+  .copied{color:var(--green); font-size:13px; font-weight:700;}
+  .foot{text-align:center; font-size:12.5px; color:var(--sub); font-weight:500; margin-top:24px;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ロゴ">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#4285f4"/>
+              <stop offset="1" stop-color="#0b57d0"/>
+            </linearGradient>
+          </defs>
+          <rect x="1.5" y="1.5" width="49" height="49" rx="14" fill="url(#lg)"/>
+          <g fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="13" y="12" width="26" height="28" rx="4" fill="rgba(255,255,255,.14)"/>
+            <line x1="13" y1="21" x2="39" y2="21"/>
+            <line x1="22" y1="21" x2="22" y2="40"/>
+          </g>
+          <path d="M28.5 30.5l3 3 6.5-6.8" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <h1>シーズン成績 TSVプロンプト作成</h1>
+        <p>NotebookLM用の「直近のシーズン成績」抽出プロンプトを、変数を埋めるだけで自動生成。</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn ghost sm" id="resetAll" type="button">すべてリセット</button>
+    </div>
+  </div>
+
+  <div style="height:6px;"></div>
+
+    <!-- ソースURL整理（最上部） -->
+    <div class="card">
+      <div class="card-head">
+        <div class="badge">1</div>
+        <h2>ソースURL整理 <span class="sub">（任意）</span></h2>
+      </div>
+      <label style="margin-top:0;">参照するURL <span class="hint">（1行1URL・NotebookLMにまとめて貼る用）</span></label>
+      <textarea id="srcUrls" placeholder="https://ja.wikipedia.org/wiki/...&#10;https://www.transfermarkt.jp/...&#10;https://fbref.com/..."></textarea>
+      <div class="open-row" style="margin-top:10px;">
+        <button class="btn ghost sm" id="copy-urls" type="button">URLをまとめてコピー</button>
+        <span class="copied hidden" id="copied-urls">✓ コピーしました</span>
+        <span class="note" id="url-count" style="margin:0;"></span>
+      </div>
+    </div>
+
+    <!-- 使い方ガイド（常時表示） -->
+    <div class="card">
+      <div class="card-head">
+        <div class="badge">✓</div>
+        <h2>使い方（3ステップ）</h2>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="n">1</div>
+          <h4>NotebookLMを開く</h4>
+          <p>下の緑ボタンから開き、Googleアカウントでログイン。「新しいノートブック」を作成します。</p>
+        </div>
+        <div class="step">
+          <div class="n">2</div>
+          <h4>ソース（情報源）を追加</h4>
+          <p>「ソースを追加」→ ウェブサイトのURLやPDFを登録。上の「ソースURL整理」欄でまとめてコピーできます。</p>
+        </div>
+        <div class="step">
+          <div class="n">3</div>
+          <h4>プロンプトを貼る</h4>
+          <p>下で生成したメインプロンプトをコピーし、NotebookLMのチャット欄に貼って送信。TSVが出力されます。</p>
+        </div>
+      </div>
+      <div class="open-row">
+        <button class="btn green" id="openNLM3" type="button">▶ NotebookLMを開く</button>
+        <span class="note" style="margin:0;">新しいタブで開きます（notebooklm.google.com）。</span>
+      </div>
+    </div>
+
+    <!-- 2 設定 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="badge">2</div>
+        <h2>クラブ・大会を設定</h2>
+      </div>
+
+      <label>クラブ名</label>
+      <input type="text" id="club" placeholder="例：バルセロナ">
+
+      <label>国内カップ戦名① <span class="hint">（空欄なら「国内カップ戦」・大会名を書いてもOK）</span></label>
+      <input type="text" id="cup1" placeholder="例：コパ・デル・レイ">
+
+      <label>国内カップ戦名② <span class="hint">（2つ目のカップ・空欄で12列／記入で13列）</span></label>
+      <input type="text" id="cup2" placeholder="例：EFLカップ">
+
+      <div class="row-3" style="margin-top:14px;">
+        <div>
+          <label style="margin-top:0;">開始シーズン</label>
+          <input type="text" id="startS" placeholder="14/15" value="14/15">
+        </div>
+        <div>
+          <label style="margin-top:0;">終了シーズン</label>
+          <input type="text" id="endS" placeholder="25/26" value="25/26">
+        </div>
+        <button class="btn sm" id="genSeasons" type="button">自動生成</button>
+      </div>
+
+      <label>対象シーズン一覧 <span class="hint">（1行1シーズン・手動編集OK）</span></label>
+      <textarea id="seasons"></textarea>
+    </div>
+
+    <!-- 3 生成 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="badge">3</div>
+        <h2>プロンプトを生成</h2>
+      </div>
+      <div class="meta" id="meta"></div>
+
+      <div class="out-head">
+        <h3>TSVプロンプト</h3>
+        <div class="r">
+          <span class="copied hidden" id="copied-main">✓ コピーしました</span>
+          <button class="btn sm" id="copy-main" type="button">コピー</button>
+        </div>
+      </div>
+      <pre id="out-main"></pre>
+    </div>
+
+  <div class="foot">出力はコードブロック内のTSVのみを想定した指示です。NotebookLMに貼り付けてご利用ください。</div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ---- シーズン解析 ----
+  function parseSeason(s){
+    s = (s||"").trim();
+    var m = s.match(/^(\d{1,2})\s*\/\s*(\d{1,2})$/);
+    if(!m) return null;
+    return [parseInt(m[1],10), parseInt(m[2],10)];
+  }
+  function pad2(n){ return (n<10?"0":"") + n; }
+  function fmtSeason(a){ return pad2(a[0]) + "/" + pad2(a[1]); }
+  function nextSeason(a){ return [(a[0]+1)%100, (a[1]+1)%100]; }
+  function seasonKey(a){ var base = a[0] < 50 ? 2000 : 1900; return base + a[0]; }
+  function generateSeasons(start, end){
+    var a = parseSeason(start), b = parseSeason(end);
+    if(!a || !b) return null;
+    var list = [], cur = a, guard = 0, endK = seasonKey(b);
+    while(guard++ < 200){
+      list.push(fmtSeason(cur));
+      if(seasonKey(cur) >= endK) break;
+      cur = nextSeason(cur);
+    }
+    return list;
+  }
+
+  // ---- 列ヘッダー ----
+  function buildHeader(cup1, cup2, withSeason){
+    var cols = [];
+    if(withSeason) cols.push("シーズン");
+    cols.push("リーグ","順位","勝点","勝","分","負","得","失");
+    cols.push(cup1 || "国内カップ戦");
+    if(cup2) cols.push(cup2);
+    cols.push("欧州カップ戦","監督","リーグ戦チーム得点王（得点数）");
+    return cols;
+  }
+
+  // ---- メインプロンプト ----
+  function buildMain(cfg){
+    var header = buildHeader(cfg.cup1, cfg.cup2, cfg.withSeason);
+    var headerLine = header.join("\t");
+    var colCount = header.length;
+    var cupLabel = cfg.cup2 ? (cfg.cup1 + "・" + cfg.cup2) : cfg.cup1;
+    var cupMatch = cfg.cup2
+      ? "国内カップ戦 = " + cfg.cup1 + " / " + cfg.cup2 + " / Domestic Cup / National Cup / League Cup / Cup"
+      : "国内カップ戦 = " + cfg.cup1 + " / Domestic Cup / National Cup / Cup";
+    var startS = cfg.seasons.length ? cfg.seasons[0] : cfg.startS;
+    var endS = cfg.seasons.length ? cfg.seasons[cfg.seasons.length-1] : cfg.endS;
+
+    var lines = [];
+    lines.push("以下のソースだけを根拠に、" + cfg.club + "の" + startS + "シーズンから" + endS + "シーズンまでの国内リーグ成績・カップ戦成績を抽出してください。");
+    lines.push("");
+    lines.push("重要：");
+    lines.push("- ソースに含まれる情報だけを使用してください。");
+    lines.push("- ソース外の情報を推測・補完しないでください。");
+    lines.push("- 不明なセルは「ソース内未確認」としてください。");
+    lines.push("- 出力はTSV形式にしてください。");
+    lines.push("- Markdown表にしないでください。");
+    lines.push("- 説明文、注釈、前置き、箇条書きは不要です。");
+    lines.push("- コードブロック（```）で囲まないでください。「```」や言語指定（```text など）は一切付けず、TSVのテキストだけをそのまま出力してください。");
+    lines.push("- 1行目にヘッダーは不要です。");
+    if(cfg.withSeason){
+      lines.push("- シーズン列は「" + startS + "」の形式で出力してください。");
+    } else {
+      lines.push("- シーズン列は出力しないでください。");
+    }
+    lines.push("- 各列は必ずタブで区切ってください。");
+    lines.push("- セル内で改行しないでください。");
+    lines.push("- 対象シーズンの順番どおりに、1シーズン1行で出力してください。");
+    lines.push("");
+    lines.push("対象クラブ：");
+    lines.push(cfg.club);
+    lines.push("");
+    lines.push("対象シーズン：");
+    cfg.seasons.forEach(function(s){ lines.push(s); });
+    lines.push("");
+    lines.push("出力列：");
+    lines.push(headerLine);
+    lines.push("");
+    lines.push("列数：");
+    lines.push("必ず" + colCount + "列にしてください。");
+    lines.push("");
+    lines.push("列名の対応：");
+    lines.push("- 勝点 = Pts / Points / P / 勝点");
+    lines.push("- 勝 = W / Wins / 勝");
+    lines.push("- 分 = D / Draws / 分");
+    lines.push("- 負 = L / Losses / 負");
+    lines.push("- 得 = GF / Goals For / F / Goals scored / 得点 / 得");
+    lines.push("- 失 = GA / Goals Against / A / Goals conceded / 失点 / 失");
+    lines.push("- " + cupMatch);
+    lines.push("- 欧州カップ戦 = UEFA Champions League / Champions League / CL / Europa League / EL / Conference League / UECL");
+    lines.push("");
+    lines.push("表記ルール：");
+    lines.push("- リーグは「1部」「2部」のように短くしてください。");
+    lines.push("- 順位は「優勝」「2位」「3位」などの形式にしてください。");
+    lines.push("- " + cupLabel + "は「優勝」「準優勝」「ベスト4」「ベスト8」「4回戦」「3回戦」「準決勝敗退」など短くしてください。");
+    lines.push("- 欧州カップ戦は「CL:優勝」「CL:ベスト4」「CL:ベスト8」「CL:16強」「CL:GS敗退」「EL:ベスト8」「ｶﾝﾌｧﾚﾝｽ:ベスト4」「-」のように短くしてください。");
+    lines.push("- 欧州カップ戦に複数大会がある場合は「CL:GS敗退 / EL:ベスト8」のように1セル内にまとめてください。");
+    lines.push("- 監督がシーズン途中で交代している場合は「監督A/監督B」のように1セル内にまとめてください。");
+    lines.push("- リーグ戦チーム得点王は「選手名(得点数)」の形式にしてください。");
+    lines.push("- 同点で複数人いる場合は「選手A/選手B(得点数)」の形式にしてください。");
+    lines.push("- 監督名・選手名は、必ず日本語（カタカナ）表記で出力してください。原語・アルファベット表記の場合も、一般的な日本語カタカナ表記に変換してください（例：Xavi → シャビ、Lewandowski → レヴァンドフスキ）。");
+    lines.push("- ソース内にそのセルの情報が本当に存在しない場合だけ「ソース内未確認」としてください。");
+    lines.push("");
+    lines.push("最終出力は、以下の列順を厳守してください。");
+    lines.push(headerLine);
+    return lines.join("\n");
+  }
+
+  function collect(){
+    var seasonsRaw = $("seasons").value.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
+    return {
+      club: $("club").value.trim() || "（クラブ名）",
+      cup1: $("cup1").value.trim() || "国内カップ戦",
+      cup2: $("cup2").value.trim(),
+      startS: $("startS").value.trim(),
+      endS: $("endS").value.trim(),
+      withSeason: true,
+      seasons: seasonsRaw
+    };
+  }
+
+  function render(){
+    var cfg = collect();
+    var header = buildHeader(cfg.cup1, cfg.cup2, cfg.withSeason);
+    $("out-main").textContent = buildMain(cfg);
+    var meta = $("meta"); meta.innerHTML = "";
+    [
+      "列数：" + header.length + "列",
+      cfg.cup2 ? "国内カップ：2種" : "国内カップ：1種",
+      "シーズン数：" + cfg.seasons.length
+    ].forEach(function(c){
+      var el = document.createElement("span"); el.className="chip"; el.textContent=c; meta.appendChild(el);
+    });
+  }
+
+  // ---- events ----
+  $("genSeasons").addEventListener("click", function(){
+    var list = generateSeasons($("startS").value, $("endS").value);
+    if(!list){ alert("シーズンは「14/15」のような形式で入力してください。"); return; }
+    $("seasons").value = list.join("\n"); render();
+  });
+  ["club","cup1","cup2","startS","endS","seasons"].forEach(function(id){
+    $(id).addEventListener("input", render);
+  });
+
+  // copy
+  function flash(id){ var b=$(id); b.classList.remove("hidden"); setTimeout(function(){ b.classList.add("hidden"); }, 1600); }
+  function fallback(text){ var ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); }
+  function copyText(text, badgeId){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){flash(badgeId);}, function(){ fallback(text); flash(badgeId); });
+    } else { fallback(text); flash(badgeId); }
+  }
+  $("copy-main").addEventListener("click", function(){ copyText($("out-main").textContent, "copied-main"); });
+
+  // NotebookLM open
+  function openNLM(){ window.open("https://notebooklm.google.com/", "_blank", "noopener"); }
+  ["openNLM","openNLM2","openNLM3"].forEach(function(id){
+    var el = $(id); if(el) el.addEventListener("click", openNLM);
+  });
+
+  // source URLs
+  function cleanUrls(){ return $("srcUrls").value.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean); }
+  function updateUrlCount(){ var n = cleanUrls().length; $("url-count").textContent = n ? (n + "件のURL") : ""; }
+  $("srcUrls").addEventListener("input", updateUrlCount);
+  $("copy-urls").addEventListener("click", function(){
+    var urls = cleanUrls();
+    if(!urls.length){ alert("URLを1行に1つずつ入力してください。"); return; }
+    copyText(urls.join("\n"), "copied-urls");
+  });
+
+  // reset
+  $("resetAll").addEventListener("click", function(){
+    if(!confirm("入力内容を初期状態に戻します。よろしいですか？")) return;
+    $("club").value = "";
+    $("cup1").value = ""; $("cup2").value = "";
+    $("startS").value = "14/15"; $("endS").value = "25/26";
+    $("seasons").value = generateSeasons("14/15","25/26").join("\n");
+    $("srcUrls").value = ""; updateUrlCount();
+    render();
+  });
+
+  // init
+  (function init(){
+    $("seasons").value = generateSeasons("14/15","25/26").join("\n");
+    render(); updateUrlCount();
+  })();
+})();
+</script>
+</body>
+</html>

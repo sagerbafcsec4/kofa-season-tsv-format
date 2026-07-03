@@ -174,7 +174,7 @@
         <div class="step">
           <div class="n">3</div>
           <h4>プロンプトを貼る</h4>
-          <p>下で生成したプロンプトをコピー→NotebookLMに貼って送信→出力を「Excel用に変換」に貼れば、Excelに列ごと貼れます。</p>
+          <p>下で生成したプロンプトをコピー→NotebookLMに貼って送信→出力を「Excel・Word用に変換」に貼れば、Excel／Wordの表に列ごと貼れます。</p>
         </div>
       </div>
       <div class="open-row">
@@ -233,25 +233,24 @@
       <pre id="out-main"></pre>
     </div>
 
-    <!-- 4 Excel用に変換 -->
+    <!-- 4 Excel・Word用に変換 -->
     <div class="card">
       <div class="card-head">
         <div class="badge">4</div>
-        <h2>Excel用に変換 <span class="sub">（貼り付けて列を分ける）</span></h2>
+        <h2>Excel・Word用に変換 <span class="sub">（貼り付けて列を分ける）</span></h2>
       </div>
-      <p class="note" style="margin-top:0;">NotebookLMの出力（縦棒「|」区切り）をここに貼り付け、下のボタンを押すと、Excelで列が正しく分かれるタブ区切りに変換してコピーします。そのままExcelに貼り付けてください。</p>
+      <p class="note" style="margin-top:0;">NotebookLMの出力（縦棒「|」区切り）をここに貼り付け、下のボタンを押すと、実タブ区切りに変換してコピーします。この結果を、Excelにも、Wordの表にもそのまま貼り付けてください（NotebookLMの生の出力を直接貼ると「|」が残って崩れます）。</p>
       <label>NotebookLMの出力を貼り付け</label>
       <textarea id="convIn" placeholder="14/15 | 1部 | 16位 | 35 | 7 | ... を貼り付け"></textarea>
       <div class="open-row" style="margin-top:10px;">
         <button class="btn" id="convBtn" type="button">タブ区切りに変換してコピー</button>
-        <span class="copied hidden" id="copied-conv">✓ コピーしました（Excelに貼り付け）</span>
+        <span class="copied hidden" id="copied-conv">✓ コピーしました（Excel・Wordに貼り付け）</span>
         <span class="note" id="conv-count" style="margin:0;"></span>
       </div>
-      <label style="margin-top:14px;">変換結果（プレビュー）</label>
-      <pre id="convOut"></pre>
+      <p class="note">Wordで既にある表のセルに入れる場合は、いったんExcelに貼ってからExcelでコピーし直し、それをWordの表に貼ると確実です。</p>
     </div>
 
-  <div class="foot">NotebookLMで生成 →「Excel用に変換」に貼り付け → タブ区切りでコピー → Excelに貼り付け。</div>
+  <div class="foot">NotebookLMで生成 →「Excel・Word用に変換」に貼り付け → タブ区切りでコピー → Excel／Wordの表に貼り付け。</div>
 </div>
 
 <script>
@@ -446,16 +445,13 @@
     });
     return rows.join("\n");
   }
-  function runConvert(){
+  function updateConvCount(){
     var tsv = convertToTSV($("convIn").value);
-    $("convOut").textContent = tsv;
-    var n = tsv ? tsv.split("\n").length : 0;
-    $("conv-count").textContent = n ? (n + "行") : "";
-    return tsv;
+    $("conv-count").textContent = tsv ? (tsv.split("\n").length + "行") : "";
   }
-  $("convIn").addEventListener("input", runConvert);
+  $("convIn").addEventListener("input", updateConvCount);
   $("convBtn").addEventListener("click", function(){
-    var tsv = runConvert();
+    var tsv = convertToTSV($("convIn").value);
     if(!tsv){ alert("NotebookLMの出力（縦棒|区切り）を貼り付けてください。"); return; }
     copyText(tsv, "copied-conv");
   });
@@ -468,7 +464,7 @@
     $("startS").value = "14/15"; $("endS").value = "25/26";
     $("seasons").value = generateSeasons("14/15","25/26").join("\n");
     $("srcUrls").value = ""; updateUrlCount();
-    $("convIn").value = ""; $("convOut").textContent = ""; $("conv-count").textContent = "";
+    $("convIn").value = ""; $("conv-count").textContent = "";
     render();
   });
 

@@ -174,7 +174,7 @@
         <div class="step">
           <div class="n">3</div>
           <h4>プロンプトを貼る</h4>
-          <p>下で生成したメインプロンプトをコピーし、NotebookLMのチャット欄に貼って送信。TSVが出力されます。</p>
+          <p>下で生成したプロンプトをコピー→NotebookLMに貼って送信→出力を「Excel用に変換」に貼れば、Excelに列ごと貼れます。</p>
         </div>
       </div>
       <div class="open-row">
@@ -233,7 +233,25 @@
       <pre id="out-main"></pre>
     </div>
 
-  <div class="foot">出力はコードブロック内のTSVのみを想定した指示です。NotebookLMに貼り付けてご利用ください。</div>
+    <!-- 4 Excel用に変換 -->
+    <div class="card">
+      <div class="card-head">
+        <div class="badge">4</div>
+        <h2>Excel用に変換 <span class="sub">（貼り付けて列を分ける）</span></h2>
+      </div>
+      <p class="note" style="margin-top:0;">NotebookLMの出力（縦棒「|」区切り）をここに貼り付け、下のボタンを押すと、Excelで列が正しく分かれるタブ区切りに変換してコピーします。そのままExcelに貼り付けてください。</p>
+      <label>NotebookLMの出力を貼り付け</label>
+      <textarea id="convIn" placeholder="14/15 | 1部 | 16位 | 35 | 7 | ... を貼り付け"></textarea>
+      <div class="open-row" style="margin-top:10px;">
+        <button class="btn" id="convBtn" type="button">タブ区切りに変換してコピー</button>
+        <span class="copied hidden" id="copied-conv">✓ コピーしました（Excelに貼り付け）</span>
+        <span class="note" id="conv-count" style="margin:0;"></span>
+      </div>
+      <label style="margin-top:14px;">変換結果（プレビュー）</label>
+      <pre id="convOut"></pre>
+    </div>
+
+  <div class="foot">NotebookLMで生成 →「Excel用に変換」に貼り付け → タブ区切りでコピー → Excelに貼り付け。</div>
 </div>
 
 <script>
@@ -277,7 +295,7 @@
   // ---- メインプロンプト ----
   function buildMain(cfg){
     var header = buildHeader(cfg.cup1, cfg.cup2, cfg.withSeason);
-    var headerLine = header.join("\t");
+    var headerLine = header.join(" | ");
     var colCount = header.length;
     var cupLabel = cfg.cup2 ? (cfg.cup1 + "・" + cfg.cup2) : cfg.cup1;
     var cupMatch = cfg.cup2
@@ -293,18 +311,18 @@
     lines.push("- ソースに含まれる情報だけを使用してください。");
     lines.push("- ソース外の情報を推測・補完しないでください。");
     lines.push("- 不明なセルは「ソース内未確認」としてください。");
-    lines.push("- 出力はTSV形式にしてください。");
-    lines.push("- Markdown表にしないでください。");
+    lines.push("- 出力は各列を半角の縦棒「 | 」で区切った表形式にしてください（タブや空白では区切らないでください）。");
+    lines.push("- Markdown表（|---|の区切り行など）にはしないでください。データ行だけを出力してください。");
     lines.push("- 説明文、注釈、前置き、箇条書きは不要です。");
-    lines.push("- 出力全体を1つのコードブロック（```）で囲み、その中にTSVだけを入れてください（タブ区切りと改行を保つため）。ただし言語指定は付けず、必ず ``` だけにしてください（```text などは禁止）。");
+    lines.push("- 出力全体を1つのコードブロック（```）で囲み、その中に縦棒（|）区切りのデータだけを入れてください（改行を保つため）。ただし言語指定は付けず、必ず ``` だけにしてください（```text などは禁止）。");
     lines.push("- 1行目にヘッダーは不要です。");
     if(cfg.withSeason){
       lines.push("- シーズン列は「" + startS + "」の形式で出力してください。");
     } else {
       lines.push("- シーズン列は出力しないでください。");
     }
-    lines.push("- 各列は必ずタブで区切ってください。");
-    lines.push("- セル内で改行しないでください。");
+    lines.push("- 各列は必ず半角の縦棒「 | 」で区切ってください。");
+    lines.push("- セル内で改行しないでください。また、セルの中身に「 | 」を使わないでください。");
     lines.push("- 対象シーズンの順番どおりに、1シーズン1行で出力してください。");
     lines.push("");
     lines.push("対象クラブ：");
@@ -409,6 +427,39 @@
     copyText(urls.join("\n"), "copied-urls");
   });
 
+  // Excel用に変換（縦棒|区切り → タブ区切り）
+  function convertToTSV(raw){
+    var rows = [];
+    raw.split(/\r?\n/).forEach(function(l){
+      var t = l.trim();
+      if(!t || /^```/.test(t)) return;               // コードフェンス行を除去
+      var cells;
+      if(t.indexOf("|") !== -1) cells = t.split("|");
+      else if(t.indexOf("\t") !== -1) cells = t.split("\t");
+      else cells = [t];
+      cells = cells.map(function(c){ return c.trim(); });
+      if(cells.length && cells[0] === "") cells.shift();
+      if(cells.length && cells[cells.length-1] === "") cells.pop();
+      if(cells.length && cells.every(function(c){ return /^:?-+:?$/.test(c); })) return; // Markdown区切り行を除去
+      if(!cells.length) return;
+      rows.push(cells.join("\t"));
+    });
+    return rows.join("\n");
+  }
+  function runConvert(){
+    var tsv = convertToTSV($("convIn").value);
+    $("convOut").textContent = tsv;
+    var n = tsv ? tsv.split("\n").length : 0;
+    $("conv-count").textContent = n ? (n + "行") : "";
+    return tsv;
+  }
+  $("convIn").addEventListener("input", runConvert);
+  $("convBtn").addEventListener("click", function(){
+    var tsv = runConvert();
+    if(!tsv){ alert("NotebookLMの出力（縦棒|区切り）を貼り付けてください。"); return; }
+    copyText(tsv, "copied-conv");
+  });
+
   // reset
   $("resetAll").addEventListener("click", function(){
     if(!confirm("入力内容を初期状態に戻します。よろしいですか？")) return;
@@ -417,6 +468,7 @@
     $("startS").value = "14/15"; $("endS").value = "25/26";
     $("seasons").value = generateSeasons("14/15","25/26").join("\n");
     $("srcUrls").value = ""; updateUrlCount();
+    $("convIn").value = ""; $("convOut").textContent = ""; $("conv-count").textContent = "";
     render();
   });
 
